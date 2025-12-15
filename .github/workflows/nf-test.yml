@@ -117,8 +117,90 @@ jobs:
             fi
           fi
 
+  netmhcpan:
+    name: Run NetMHCpan tests
+    if: ${{ ( github.event_name == 'push' && github.repository == 'nf-core/epitopeprediction' ) || github.event.pull_request.head.repo.full_name == 'nf-core/epitopeprediction' }}
+    runs-on:
+      - runs-on=${{ github.run_id }}-netmhcpan
+      - runner=4cpu-linux-x64
+    strategy:
+      fail-fast: false
+      matrix:
+        NXF_VER:
+          - "25.04.0"
+          - "latest-everything"
+    steps:
+      - name: Check out pipeline code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          fetch-depth: 0
+
+      - name: Install non-free NetMHCpan software
+        env:
+          DECRYPT_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          curl -L -o netMHCpan-4.2.Linux.tar.gz.gpg https://raw.githubusercontent.com/nf-core/test-datasets/epitopeprediction/software/netMHCpan-4.2.Linux.tar.gz.gpg
+          gpg --batch --yes --pinentry-mode=loopback --passphrase "${{ secrets.GPG_PASSPHRASE }}" --output ${{ github.workspace }}/netMHCpan-4.2.Linux.tar.gz --decrypt netMHCpan-4.2.Linux.tar.gz.gpg
+
+      - name: Setup Nextflow
+        uses: nf-core/setup-nextflow@v2
+        with:
+          version: "${{ matrix.NXF_VER }}"
+
+      - name: Set up Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6
+        with:
+          python-version: "3.14"
+
+      - name: Install nf-test
+        uses: nf-core/setup-nf-test@v1
+        with:
+          version: "${{ env.NFT_VER }}"
+          install-pdiff: true
+
+      - name: Run nf-test with NetMHCpan
+        continue-on-error: ${{ matrix.NXF_VER == 'latest-everything' }}
+        env:
+          NFT_WORKDIR: ${{ env.NFT_WORKDIR }}
+        run: |
+          nf-test test \
+            --profile=+docker \
+            --tag netmhcpan \
+            --ci \
+            --verbose \
+            --tap=test.tap
+
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "# 🚀 NetMHCpan nf-test results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | Test Name | Nextflow Version |" >> $GITHUB_STEP_SUMMARY
+          echo "|:------:|-----------|------------------|" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f test.tap ]; then
+            while IFS= read -r line; do
+              if [[ $line =~ ^ok ]]; then
+                test_name="${line#ok }"
+                test_name="${test_name#* }"
+                echo "| ✅ | ${test_name} | ${{ matrix.NXF_VER }} |" >> $GITHUB_STEP_SUMMARY
+              elif [[ $line =~ ^not\ ok ]]; then
+                test_name="${line#not ok }"
+                test_name="${test_name#* }"
+                echo "| ❌ | ${test_name} | ${{ matrix.NXF_VER }} |" >> $GITHUB_STEP_SUMMARY
+              fi
+            done < test.tap
+          else
+            echo "| ⚠️ | No test results found | ${{ matrix.NXF_VER }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Clean up
+        if: always()
+        run: |
+          sudo rm -rf /home/ubuntu/tests/ || true
+
   confirm-pass:
-    needs: [nf-test]
+    needs: [nf-test, netmhcpan]
     if: always()
     runs-on: # use self-hosted runners
       - runs-on=${{ github.run_id }}-confirm-pass
