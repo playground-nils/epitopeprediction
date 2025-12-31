@@ -99,7 +99,12 @@ You can also generate such `YAML`/`JSON` files via [nf-core/launch](https://nf-c
 
 ### Running the pipeline with NetMHC
 
-The pipeline also aims to support the most recent NetMHCpan and NetMHCIIpan versions. If one of the external tools is specified, the path to the corresponding tarball has to be specified. See the [Download section](https://services.healthtech.dtu.dk/services/NetMHCpan-4.1/) of NetMHCpan. When using `conda`, the parameter `--netmhc_system` (if the default value `linux` is not applicable) must also be specified.
+The pipeline supports NetMHCpan 4.2bstatic and NetMHCIIpan 4.3e. If one of the external tools is specified, the path to the corresponding tarball has to be specified. See the download sections for [NetMHCpan-4.2](https://services.healthtech.dtu.dk/services/NetMHCpan-4.2/) and [NetMHCIIpan-4.3](https://services.healthtech.dtu.dk/services/NetMHCIIpan-4.3/).
+
+When using `conda`, the parameter `--netmhc_system` must also be specified if the default value `linux` is not applicable.
+
+> [!IMPORTANT]
+> Only the specific versions `netMHCpan-4.2bstatic.Linux.tar.gz` and `netMHCIIpan-4.3e.Linux.tar.gz` are supported, as the pipeline validates these tarballs via checksum to ensure integrity.
 
 A typical command is as follows:
 
@@ -113,7 +118,7 @@ nextflow run nf-core/epitopeprediction \
   --max_peptide_length_classI 12 \
   --min_peptide_length_classII 12 \
   --max_peptide_length_classII 25 \
-  --netmhcpan_path /path/to/netMHCpan-4.1b.Linux.tar.gz \
+  --netmhcpan_path /path/to/netMHCpan-4.2bstatic.Linux.tar.gz \
   --netmhciipan_path /path/to/netMHCIIpan-4.3e.Linux.tar.gz \
 ```
 
