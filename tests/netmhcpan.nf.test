@@ -17,8 +17,11 @@ nextflow_pipeline {
         then {
             // stable_name: All files + folders in ${params.outdir}/ with a stable name
             def stable_name = getAllFilesFromDir(params.outdir, relative: true, includeDir: true, ignore: ['pipeline_info/*.{html,json,txt}'])
+            stable_name = stable_name.findAll { !it.startsWith('netmhcpan') }
             // stable_path: All files in ${params.outdir}/ with stable content
             def stable_path = getAllFilesFromDir(params.outdir, ignoreFile: 'tests/.nftignore')
+            // remove all files from stable_path that start with 'netmhcpan' since ignore does not work in this case
+            stable_path = stable_path.findAll { !it.toString().contains('/netmhcpan/') }
             assertAll(
                 { assert workflow.success},
                 { assert snapshot(
