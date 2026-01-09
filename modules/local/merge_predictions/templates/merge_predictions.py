@@ -197,6 +197,7 @@ class PredictionResult:
         df = pd.read_csv(self.file_path, sep='\t', skiprows=1)
         # Extract Peptide, percentile rank, binding affinity
         df = df[df.columns[df.columns.str.contains('Peptide|Rank|BA_score')]]
+
         df = df.rename(columns={'Peptide':self.peptide_col_name,'Rank':'Rank.0','BA_score':'BA_score.0'})
         # to longformat based on .0|1|2..
         df_long = pd.melt(
@@ -213,6 +214,11 @@ class PredictionResult:
 
         # Pivot table to organize columns properly
         df_pivot = df_long.pivot_table(index=[self.peptide_col_name, 'allele'], columns='metric', values='value').reset_index()
+
+        # If -mode 1 or 2 is specified, BA_score is absent -> create an empty column for BA containing na's for downstream compatibility
+        if 'BA' not in df_pivot.columns:
+            df_pivot['BA'] = np.nan
+        
         df_pivot['allele'] = [alleles_dict[int(index.strip('.'))] for index in df_pivot['allele']]
         df_pivot['binder'] = df_pivot['rank'] <= PredictorBindingThreshold.NETMHCPAN.value
         df_pivot['predictor'] = self.predictor

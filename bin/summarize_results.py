@@ -106,7 +106,7 @@ class MultiQC:
         best_ba = (
             df_valid[df_valid['predictor'] == best_predictor]
                 .groupby([peptide_col_name, 'allele'], group_keys=False)
-                .apply(lambda x: x.loc[x['BA'].idxmax(skipna=True)])
+                .apply(lambda x: x.loc[x['BA'].idxmax(skipna=True)] if x['BA'].notna().any() else x.iloc[0])
         )
         bins = np.linspace(0, 1, 21)
         bin_centers = (bins[:-1] + bins[1:]) / 2
