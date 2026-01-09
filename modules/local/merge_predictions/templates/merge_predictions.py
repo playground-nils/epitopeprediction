@@ -218,7 +218,7 @@ class PredictionResult:
         # If -mode 1 or 2 is specified, BA_score is absent -> create an empty column for BA containing na's for downstream compatibility
         if 'BA' not in df_pivot.columns:
             df_pivot['BA'] = np.nan
-        
+
         df_pivot['allele'] = [alleles_dict[int(index.strip('.'))] for index in df_pivot['allele']]
         df_pivot['binder'] = df_pivot['rank'] <= PredictorBindingThreshold.NETMHCPAN.value
         df_pivot['predictor'] = self.predictor
