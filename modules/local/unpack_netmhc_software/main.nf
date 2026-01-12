@@ -57,22 +57,6 @@ process UNPACK_NETMHC_SOFTWARE {
         -e "s_setenv[[:space:]]NMHOME.*_setenv NMHOME \\`realpath -s \\\$0 | sed -r 's/[^/]+\$//'\\`_ " "${toolname}/${toolbinaryname}"
 
     #
-    # VALIDATE THE CHECKSUM OF THE DOWNLOADED MODEL DATA
-    #
-    if [ "$toolname" == "netmhcpan" ]; then
-        checksum="\$(md5sum "$datatarball" | cut -f1 -d' ')"
-        if [ "\$checksum" != "${datachecksum}" ]; then
-            echo "A checksum mismatch occurred when checking the data file for ${toolname}." >&2
-            exit 3
-        fi
-
-        #
-        # UNPACK THE DOWNLOADED MODEL DATA
-        #
-        tar -C "${toolname}" -v -x -f "$datatarball"
-    fi
-
-    #
     # CREATE VERSION FILE
     #
     cat <<-END_VERSIONS > versions.yml

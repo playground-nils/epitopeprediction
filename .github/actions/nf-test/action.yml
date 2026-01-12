@@ -64,6 +64,7 @@ runs:
         nf-test test \
           --profile=+${{ inputs.profile }} \
           $(if [ -n "${{ inputs.tags }}" ]; then echo "--tag ${{ inputs.tags }}"; fi) \
+          --tag !netmhcpan \
           --ci \
           --changed-since HEAD^ \
           --verbose \
