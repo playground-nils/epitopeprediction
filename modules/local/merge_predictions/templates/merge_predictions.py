@@ -199,7 +199,12 @@ class PredictionResult:
         # Extract Peptide, percentile rank, binding affinity
         # Select either Rank_BA (BA_Rank) or Rank (EL_Rank) based on use_ba_rank flag
         rank_column = 'Rank_BA' if self.use_ba_rank else 'Rank'
-        df = df[df.columns[df.columns.str.contains(f'Peptide|{rank_column}|BA_score')]]
+        # Use regex with word boundaries to match exact column names
+        if self.use_ba_rank:
+            pattern = r'Peptide|Rank_BA|BA_score'
+        else:
+            pattern = r'Peptide|^Rank$|BA_score'
+        df = df[df.columns[df.columns.str.contains(pattern, regex=True)]]
 
         df = df.rename(columns={'Peptide':self.peptide_col_name, rank_column:f'{rank_column}.0','BA_score':'BA_score.0'})
         # to longformat based on .0|1|2..
@@ -213,7 +218,12 @@ class PredictionResult:
 
         # Extract the allele information (e.g., .0, .1, etc.)
         df_long['allele'] = df_long['metric'].str.split('.').str[1]
-        df_long['metric'] = df_long['metric'].apply(lambda x: x.split('.')[0].replace('Rank_BA','rank').replace('Rank','rank').replace('BA_score','BA'))
+        # Replace rank column name with 'rank', handling both Rank_BA and Rank
+        df_long['metric'] = df_long['metric'].apply(
+            lambda x: x.split('.')[0].replace('Rank_BA', 'rank') if 'Rank_BA' in x 
+            else x.split('.')[0].replace('Rank', 'rank') if x.startswith('Rank') 
+            else x.split('.')[0].replace('BA_score', 'BA')
+        )
 
         # Pivot table to organize columns properly
         df_pivot = df_long.pivot_table(index=[self.peptide_col_name, 'allele'], columns='metric', values='value').reset_index()
