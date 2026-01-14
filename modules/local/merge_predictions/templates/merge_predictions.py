@@ -217,7 +217,7 @@ class PredictionResult:
             pattern = r'Peptide|^Rank$|BA_score'
         df = df[df.columns[df.columns.str.contains(pattern, regex=True)]]
 
-        df = df.rename(columns={'Peptide':self.peptide_col_name, rank_column:f'{rank_column}.0','BA_score':'BA_score.0'})
+        df = df.rename(columns={'Peptide': self.peptide_col_name, rank_column: f'{rank_column}.0', 'BA_score': 'BA_score.0'})
         # to longformat based on .0|1|2..
         df_long = pd.melt(
             df,
