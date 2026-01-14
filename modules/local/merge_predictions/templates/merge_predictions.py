@@ -191,6 +191,17 @@ class PredictionResult:
 
         return df
 
+    def _normalize_metric_name(self, metric: str) -> str:
+        """Normalize metric column names to standard format."""
+        base_metric = metric.split('.')[0]
+        if 'Rank_BA' in base_metric:
+            return 'rank'
+        elif base_metric.startswith('Rank'):
+            return 'rank'
+        elif 'BA_score' in base_metric:
+            return 'BA'
+        return base_metric
+
     def _format_netmhcpan_prediction(self) -> pd.DataFrame:
         # Map with allele index to allele name
         alleles_dict = {i: allele for i, allele in enumerate(self.alleles)}
@@ -218,12 +229,8 @@ class PredictionResult:
 
         # Extract the allele information (e.g., .0, .1, etc.)
         df_long['allele'] = df_long['metric'].str.split('.').str[1]
-        # Replace rank column name with 'rank', handling both Rank_BA and Rank
-        df_long['metric'] = df_long['metric'].apply(
-            lambda x: x.split('.')[0].replace('Rank_BA', 'rank') if 'Rank_BA' in x 
-            else x.split('.')[0].replace('Rank', 'rank') if x.startswith('Rank') 
-            else x.split('.')[0].replace('BA_score', 'BA')
-        )
+        # Normalize metric column names
+        df_long['metric'] = df_long['metric'].apply(self._normalize_metric_name)
 
         # Pivot table to organize columns properly
         df_pivot = df_long.pivot_table(index=[self.peptide_col_name, 'allele'], columns='metric', values='value').reset_index()
