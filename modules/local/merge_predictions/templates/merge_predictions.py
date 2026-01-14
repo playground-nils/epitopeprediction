@@ -191,17 +191,6 @@ class PredictionResult:
 
         return df
 
-    def _normalize_metric_name(self, metric: str) -> str:
-        """Normalize metric column names to standard format."""
-        base_metric = metric.split('.')[0]
-        if 'Rank_BA' in base_metric:
-            return 'rank'
-        elif base_metric.startswith('Rank'):
-            return 'rank'
-        elif 'BA_score' in base_metric:
-            return 'BA'
-        return base_metric
-
     def _format_netmhcpan_prediction(self) -> pd.DataFrame:
         # Map with allele index to allele name
         alleles_dict = {i: allele for i, allele in enumerate(self.alleles)}
@@ -209,13 +198,9 @@ class PredictionResult:
         df = pd.read_csv(self.file_path, sep='\t', skiprows=1)
         # Extract Peptide, percentile rank, binding affinity
         # Select either Rank_BA (BA_Rank) or Rank (EL_Rank) based on use_ba_rank flag
-        rank_column = 'Rank_BA' if self.use_ba_rank else 'Rank'
-        # Use regex with word boundaries to match exact column names
-        if self.use_ba_rank:
-            pattern = r'Peptide|Rank_BA|BA_score'
-        else:
-            pattern = r'Peptide|^Rank$|BA_score'
-        df = df[df.columns[df.columns.str.contains(pattern, regex=True)]]
+        rank_metric = '_BA' if self.use_ba_rank else ''
+        rank_column = f'Rank{rank_metric}'
+        df = df[df.columns[df.columns.str.contains(f'Peptide|{rank_column}|BA_score')]]
 
         df = df.rename(columns={'Peptide': self.peptide_col_name, rank_column: f'{rank_column}.0', 'BA_score': 'BA_score.0'})
         # to longformat based on .0|1|2..
@@ -229,8 +214,7 @@ class PredictionResult:
 
         # Extract the allele information (e.g., .0, .1, etc.)
         df_long['allele'] = df_long['metric'].str.split('.').str[1]
-        # Normalize metric column names
-        df_long['metric'] = df_long['metric'].apply(self._normalize_metric_name)
+        df_long['metric'] = df_long['metric'].apply(lambda x: x.split('.')[0].replace(rank_column, 'rank').replace('BA_score', 'BA'))
 
         # Pivot table to organize columns properly
         df_pivot = df_long.pivot_table(index=[self.peptide_col_name, 'allele'], columns='metric', values='value').reset_index()
