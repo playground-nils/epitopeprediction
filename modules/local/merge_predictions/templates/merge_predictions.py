@@ -234,15 +234,19 @@ class PredictionResult:
     def _format_netmhciipan_prediction(self) -> pd.DataFrame:
         """
         Read in netmhciipan prediction output and extract the columns
-        `Peptide,Rank,Score_BA` for multiple alleles.
+        `Peptide,Rank_EL,Score_BA` for multiple alleles (or Rank_BA when use_ba_rank is True).
         """
         # Map with allele index to allele name. NetMHCIIpan sorts alleles alphabetically
         alleles_dict = {i: allele for i, allele in enumerate(self.alleles)}
         # Read the file into a DataFrame with no headers initially
         df = pd.read_csv(self.file_path, sep='\t', skiprows=1)
         # Extract Peptide, percentile rank, binding affinity
-        df = df[df.columns[df.columns.str.contains('Peptide|Rank(?!_BA)|Score_BA')]]
-        df = df.rename(columns={'Peptide':self.peptide_col_name,'Rank':'Rank.0','Score_BA':'Score_BA.0'})
+        # Select either Rank_BA (BA_Rank) or Rank_EL (EL_Rank) based on use_ba_rank flag
+        rank_metric = 'BA' if self.use_ba_rank else 'EL'
+        rank_column = f'Rank_{rank_metric}'
+        df = df[df.columns[df.columns.str.contains(f'Peptide|{rank_column}|Score_BA')]]
+
+        df = df.rename(columns={'Peptide': self.peptide_col_name, rank_column: f'{rank_column}.0', 'Score_BA': 'Score_BA.0'})
         # to longformat based on .0|1|2..
         df_long = pd.melt(
             df,
@@ -253,7 +257,7 @@ class PredictionResult:
         )
         # Extract the allele information (e.g., .0, .1, etc.)
         df_long['allele'] = df_long['metric'].str.split('.').str[1]
-        df_long['metric'] = df_long['metric'].apply(lambda x: x.split('.')[0].replace('Rank','rank').replace('Score_BA','BA'))
+        df_long['metric'] = df_long['metric'].apply(lambda x: x.split('.')[0].replace(rank_column, 'rank').replace('Score_BA', 'BA'))
 
         # Pivot table to organize columns properly
         df_pivot = df_long.pivot_table(index=[self.peptide_col_name, 'allele'], columns='metric', values='value').reset_index()
