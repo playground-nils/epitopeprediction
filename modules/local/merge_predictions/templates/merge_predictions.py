@@ -43,6 +43,7 @@ class Arguments:
         self.source_file = "$source_file"
         self.prefix = "$task.ext.prefix" if "$task.ext.prefix" != "null" else "$meta.id"
         self.alleles = sorted("$meta.alleles".split(';'))
+        self.use_ba_rank = False  # Default value, will be overridden if --use_ba_rank is passed
         self.parse_ext_args("$task.ext.args")
 
     def parse_ext_args(self, args_string: str) -> None:
@@ -269,8 +270,7 @@ def main():
     # Iterate over each file predicted by multiple predictors, harmonize and merge output
     output_df = []
     for file in args.input:
-        use_ba_rank = getattr(args, 'use_ba_rank', False)
-        result = PredictionResult(file, args.alleles, args.peptide_col_name, use_ba_rank)
+        result = PredictionResult(file, args.alleles, args.peptide_col_name, args.use_ba_rank)
 
         logging.info(f"Writing {len(result.prediction_df)} {result.predictor} predictions to file..")
         output_df.append(result.prediction_df)

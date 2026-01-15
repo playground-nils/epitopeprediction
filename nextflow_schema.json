@@ -146,6 +146,7 @@
                 "use_ba_rank": {
                     "type": "boolean",
                     "default": false,
+                    "hidden": true,
                     "description": "Use BA_Rank instead of EL_Rank for netMHCpan predictions.",
                     "help_text": "By default, netMHCpan predictions use EL_Rank (Eluted Ligand Rank) as the rank metric, which is the recommended metric by netMHCpan developers. When this flag is enabled, BA_Rank (Binding Affinity Rank) will be used instead. Note that EL_Rank and BA_Rank can differ significantly as they are computed against different reference sets."
                 }
