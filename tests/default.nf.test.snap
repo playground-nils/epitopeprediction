@@ -39,7 +39,6 @@
             },
             [
                 "epytope",
-                "epytope/sample1_variants.chr1.tsv",
                 "epytope/sample1_variants.chr10.tsv",
                 "epytope/sample1_variants.chr11.tsv",
                 "epytope/sample1_variants.chr12.tsv",
