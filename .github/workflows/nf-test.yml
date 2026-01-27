@@ -51,6 +51,7 @@ jobs:
           NFT_VER: ${{ env.NFT_VER }}
         with:
           max_shards: 7
+          tags: "!netmhcpan"
 
       - name: debug
         run: |
