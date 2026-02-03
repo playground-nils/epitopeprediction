@@ -2,7 +2,6 @@ nextflow_pipeline {
 
     name "Test pipeline with NetMHCpan"
     script "../main.nf"
-    tag "pipeline"
     tag "netmhcpan"
     profile "test_netmhcpan"
 
