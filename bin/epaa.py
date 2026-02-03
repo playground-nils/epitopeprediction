@@ -32,6 +32,17 @@ transcriptProteinTable = {}
 vcfProteinIds = {}  # Store protein IDs extracted directly from VCF annotations
 vcfConsequences = {}  # Store consequences by (chrom, pos, ref, obs) for lookup in FASTA generation
 
+def unwrap_to_string(value, default="unknown"):
+    """Unwrap nested lists to get a string value.
+
+    get_metadata() returns values wrapped in lists, and if metadata was
+    copied incorrectly, values can become double-wrapped. This function
+    safely extracts the string regardless of nesting level.
+    """
+    while isinstance(value, list) and len(value) > 0:
+        value = value[0]
+    return value if isinstance(value, str) else default
+
 # Set up logging (epytope uses logging as well, so we have to adapt the existing logger)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -404,13 +415,13 @@ def read_vcf(filename, pass_only=True):
                 for m in final_metadata_list:
                     meta_value = v.get_metadata(m)
                     if meta_value:
-                        # get_metadata returns a list, extract the first element
-                        vs_new.log_metadata(m, meta_value[0] if isinstance(meta_value, list) else meta_value)
+                        # Use unwrap_to_string to handle potentially nested lists
+                        vs_new.log_metadata(m, unwrap_to_string(meta_value, default=""))
                 # Ensure 'consequence' metadata is preserved
                 consequence_meta = v.get_metadata("consequence")
                 if consequence_meta:
-                    # get_metadata returns a list, extract the first element
-                    vs_new.log_metadata("consequence", consequence_meta[0] if isinstance(consequence_meta, list) else consequence_meta)
+                    # Use unwrap_to_string to handle potentially nested lists
+                    vs_new.log_metadata("consequence", unwrap_to_string(consequence_meta))
                 dict_vars[v] = vs_new
 
     return dict_vars.values(), transcript_ids, final_metadata_list
@@ -826,7 +837,8 @@ def generate_fasta_output(output_filename: str, mutated_proteins: list, mutated_
                 for variant_detail in var_details:
                     consequence = variant_detail.get_metadata("consequence")
                     if consequence:
-                        variant_consequences.append(consequence[0])
+                        # Use unwrap_to_string to handle potentially nested lists
+                        variant_consequences.append(unwrap_to_string(consequence))
                     else:
                         # Fallback: look up consequence from VCF by variant coordinates
                         var_key = (variant_detail.chrom, variant_detail.genomePos, variant_detail.ref, variant_detail.obs)
