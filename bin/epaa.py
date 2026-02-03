@@ -795,6 +795,7 @@ def generate_fasta_output(output_filename: str, mutated_proteins: list, mutated_
         mutated_peptides_df (pd.DataFrame): A DataFrame containing peptide-related information such as accessions.
         flanking_region_size (int): The size of the flanking region added on each side of a mutation within a peptide.
     """
+    global vcfConsequences
 
     # Build FASTA dict: wildtypes and mutations per transcript
     fasta_dict = {}
