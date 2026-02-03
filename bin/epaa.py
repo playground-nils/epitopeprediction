@@ -30,6 +30,7 @@ VERSION = "2.0"
 ID_SYSTEM_USED = EIdentifierTypes.ENSEMBL
 transcriptProteinTable = {}
 vcfProteinIds = {}  # Store protein IDs extracted directly from VCF annotations
+vcfConsequences = {}  # Store consequences by (chrom, pos, ref, obs) for lookup in FASTA generation
 
 # Set up logging (epytope uses logging as well, so we have to adapt the existing logger)
 logger = logging.getLogger()
@@ -138,6 +139,7 @@ def read_vcf(filename, pass_only=True):
     """
     global ID_SYSTEM_USED
     global vcfProteinIds
+    global vcfConsequences
 
     vep_header_available = False
     # default VEP fields
@@ -359,6 +361,9 @@ def read_vcf(filename, pass_only=True):
                     )
                     var.gene = gene
                     var.log_metadata("vardbid", variation_dbid)
+                    # Store consequence by variant coordinates for lookup in FASTA generation
+                    # This is needed because epytope may not preserve metadata through protein generation
+                    vcfConsequences[(chromosome, pos, reference, alternative)] = consequence
                     final_metadata_list.append("vardbid")
                     for metadata_name in metadata_list:
                         if metadata_name in record.INFO:
@@ -395,8 +400,13 @@ def read_vcf(filename, pass_only=True):
             for v in vs:
                 vs_new = Variant(v.id, v.type, v.chrom, v.genomePos, v.ref, v.obs, v.coding, True, v.isSynonymous)
                 vs_new.gene = v.gene
-                for m in metadata_name:
+                # Copy all metadata including 'consequence'
+                for m in final_metadata_list:
                     vs_new.log_metadata(m, v.get_metadata(m))
+                # Ensure 'consequence' metadata is preserved
+                consequence_meta = v.get_metadata("consequence")
+                if consequence_meta:
+                    vs_new.log_metadata("consequence", consequence_meta)
                 dict_vars[v] = vs_new
 
     return dict_vars.values(), transcript_ids, final_metadata_list
@@ -810,7 +820,13 @@ def generate_fasta_output(output_filename: str, mutated_proteins: list, mutated_
             for var_details in p.vars.values():
                 for variant_detail in var_details:
                     consequence = variant_detail.get_metadata("consequence")
-                    variant_consequences.append(consequence[0] if consequence else "unknown")
+                    if consequence:
+                        variant_consequences.append(consequence[0])
+                    else:
+                        # Fallback: look up consequence from VCF by variant coordinates
+                        var_key = (variant_detail.chrom, variant_detail.genomePos, variant_detail.ref, variant_detail.obs)
+                        vcf_consequence = vcfConsequences.get(var_key, "unknown")
+                        variant_consequences.append(vcf_consequence)
                     for coding_variant in variant_detail.coding.values():
                         variant_details_gene.append(coding_variant.cdsMutationSyntax)
                         variant_details_protein.append(coding_variant.aaMutationSyntax)
