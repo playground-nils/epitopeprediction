@@ -56,6 +56,7 @@ def parse_args():
     parser.add_argument("--min_length", help="Minimum peptide length of mutated peptides", type=int, default=8)
     parser.add_argument("--max_length", help="Maximum peptide length of mutated peptides", type=int, default=14)
     parser.add_argument("--genome_reference", help="Reference, retrieved information will be based on this ensembl version", default="https://grch37.ensembl.org/")
+    parser.add_argument("--ensembl_dataset", help="Ensembl BioMart dataset to use (e.g., hsapiens_gene_ensembl for human, mmusculus_gene_ensembl for mouse)", type=str, default="hsapiens_gene_ensembl")
     parser.add_argument("--proteome_reference", help="Specify reference proteome fasta for self-filtering peptides from variants")
     parser.add_argument("--peptide_col_name", help="Name of the column containing the peptide sequences", type=str, default="sequence")
     parser.add_argument("--version", help="Script version", action="version", version=VERSION)
@@ -515,7 +516,7 @@ def create_peptide_variant_dictionary(peptides):
     return pep_to_variants
 
 
-def generate_peptides_from_variants( variants: Variant, martsadapter: MartsAdapter, metadata: list, minlength: int, maxlength: int ) -> Tuple[pd.DataFrame, list]:
+def generate_peptides_from_variants( variants: Variant, martsadapter: MartsAdapter, metadata: list, minlength: int, maxlength: int, ensembl_dataset: str = "hsapiens_gene_ensembl" ) -> Tuple[pd.DataFrame, list]:
     """
     Generate mutated peptides ranging between min and max length from a list of epytore.Core.Variants.
     Args:
@@ -524,6 +525,7 @@ def generate_peptides_from_variants( variants: Variant, martsadapter: MartsAdapt
         metadata: List of metadata columns to include in the output.
         minlength: Minimum length of peptides to generate.
         maxlength: Maximum length of peptides to generate.
+        ensembl_dataset: Ensembl BioMart dataset (e.g., hsapiens_gene_ensembl, mmusculus_gene_ensembl).
     Returns:
         mutated_peptides_df: DataFrame containing mutated peptides and metadata.
         prots: List of mutated proteins.
@@ -533,7 +535,7 @@ def generate_peptides_from_variants( variants: Variant, martsadapter: MartsAdapt
     transcripts = []
     for v in variants:
         try:
-            transcripts.extend(generator.generate_transcripts_from_variants([v], martsadapter, ID_SYSTEM_USED))
+            transcripts.extend(generator.generate_transcripts_from_variants([v], martsadapter, ID_SYSTEM_USED, db=ensembl_dataset))
         except Exception:
             logger.warning(f"Could not generate transcripts for variant {v}. Skipping.")
     # Try/except for generate_proteins_from_transcripts
@@ -970,7 +972,7 @@ def __main__():
         transcriptProteinTable = martsadapter.get_protein_ids_from_transcripts(transcripts, type=EIdentifierTypes.ENSEMBL)
 
     # Generate mutated peptides from variants
-    mutated_peptides_df, mutated_proteins = generate_peptides_from_variants( variant_list, martsadapter, variants_metadata, args.min_length, args.max_length + 1)
+    mutated_peptides_df, mutated_proteins = generate_peptides_from_variants( variant_list, martsadapter, variants_metadata, args.min_length, args.max_length + 1, args.ensembl_dataset)
 
     # Check if mutated_peptides_df is empty after filtering and write empty files
     if mutated_peptides_df.empty:
