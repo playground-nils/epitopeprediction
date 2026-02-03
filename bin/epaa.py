@@ -402,11 +402,15 @@ def read_vcf(filename, pass_only=True):
                 vs_new.gene = v.gene
                 # Copy all metadata including 'consequence'
                 for m in final_metadata_list:
-                    vs_new.log_metadata(m, v.get_metadata(m))
+                    meta_value = v.get_metadata(m)
+                    if meta_value:
+                        # get_metadata returns a list, extract the first element
+                        vs_new.log_metadata(m, meta_value[0] if isinstance(meta_value, list) else meta_value)
                 # Ensure 'consequence' metadata is preserved
                 consequence_meta = v.get_metadata("consequence")
                 if consequence_meta:
-                    vs_new.log_metadata("consequence", consequence_meta)
+                    # get_metadata returns a list, extract the first element
+                    vs_new.log_metadata("consequence", consequence_meta[0] if isinstance(consequence_meta, list) else consequence_meta)
                 dict_vars[v] = vs_new
 
     return dict_vars.values(), transcript_ids, final_metadata_list
