@@ -29,6 +29,7 @@ VERSION = "2.0"
 # Define global variables
 ID_SYSTEM_USED = EIdentifierTypes.ENSEMBL
 transcriptProteinTable = {}
+vcfProteinIds = {}  # Store protein IDs extracted directly from VCF annotations
 
 # Set up logging (epytope uses logging as well, so we have to adapt the existing logger)
 logger = logging.getLogger()
@@ -136,6 +137,7 @@ def read_vcf(filename, pass_only=True):
     :return: list of epytope variants
     """
     global ID_SYSTEM_USED
+    global vcfProteinIds
 
     vep_header_available = False
     # default VEP fields
@@ -310,6 +312,37 @@ def read_vcf(filename, pass_only=True):
                                 transcript_id, tpos, ppos, split_coding_c[-1], split_coding_p[-1]
                             )
                             transcript_ids.append(transcript_id)
+
+                            # Extract protein IDs from VEP annotation fields
+                            if transcript_id not in vcfProteinIds:
+                                vcfProteinIds[transcript_id] = {"ensembl_id": "", "uniprot_id": "", "refseq_id": ""}
+
+                            # Extract Ensembl protein ID from 'ensp' field or HGVSp
+                            ensembl_protein = ""
+                            if "ensp" in vep_fields and len(split_annotation) > vep_fields["ensp"]:
+                                ensembl_protein = split_annotation[vep_fields["ensp"]].split(".")[0]
+                            # Fallback: extract from HGVSp (e.g., ENSMUSP00000150262.2:p.Val3239Arg)
+                            if not ensembl_protein and split_coding_p and len(split_coding_p) > 0:
+                                protein_prefix = split_coding_p[0].split(".")[0]
+                                if protein_prefix.startswith("ENSP") or protein_prefix.startswith("ENSMUSP"):
+                                    ensembl_protein = protein_prefix
+                            if ensembl_protein and not vcfProteinIds[transcript_id]["ensembl_id"]:
+                                vcfProteinIds[transcript_id]["ensembl_id"] = ensembl_protein
+
+                            # Extract UniProt ID from 'swissprot' or 'trembl' fields
+                            uniprot_id = ""
+                            if "swissprot" in vep_fields and len(split_annotation) > vep_fields["swissprot"]:
+                                uniprot_id = split_annotation[vep_fields["swissprot"]].split(".")[0]
+                            if not uniprot_id and "trembl" in vep_fields and len(split_annotation) > vep_fields["trembl"]:
+                                uniprot_id = split_annotation[vep_fields["trembl"]].split(".")[0]
+                            if uniprot_id and not vcfProteinIds[transcript_id]["uniprot_id"]:
+                                vcfProteinIds[transcript_id]["uniprot_id"] = uniprot_id
+
+                            # Extract RefSeq protein ID from 'refseq_match' field if available
+                            if "refseq_match" in vep_fields and len(split_annotation) > vep_fields["refseq_match"]:
+                                refseq_id = split_annotation[vep_fields["refseq_match"]].split(".")[0]
+                                if refseq_id and not vcfProteinIds[transcript_id]["refseq_id"]:
+                                    vcfProteinIds[transcript_id]["refseq_id"] = refseq_id
                 if coding:
                     pos, reference, alternative = get_epytope_annotation(vt, genomic_position, reference, str(alt))
                     var = Variant(
@@ -942,11 +975,86 @@ def get_protein_ids_from_transcripts_offline(transcripts, data_path):
     return result
 
 
+def merge_vcf_protein_ids_with_biomart(biomart_table, vcf_protein_ids, transcripts):
+    """
+    Merge protein IDs extracted from VCF annotations with BioMart lookup results.
+    VCF-derived protein IDs are used as fallback when BioMart doesn't have the mapping.
+
+    Args:
+        biomart_table: DataFrame with protein IDs from BioMart lookup.
+        vcf_protein_ids: Dictionary mapping transcript IDs to protein IDs from VCF.
+        transcripts: List of transcript IDs to process.
+
+    Returns:
+        DataFrame with merged protein IDs.
+    """
+    if biomart_table is None or biomart_table.empty:
+        # Create a new DataFrame from VCF protein IDs
+        rows = []
+        for transcript_id in transcripts:
+            transcript_base = transcript_id.split(".")[0]
+            if transcript_base in vcf_protein_ids:
+                rows.append({
+                    "ensembl_id": vcf_protein_ids[transcript_base].get("ensembl_id", ""),
+                    "refseq_id": vcf_protein_ids[transcript_base].get("refseq_id", ""),
+                    "uniprot_id": vcf_protein_ids[transcript_base].get("uniprot_id", ""),
+                    "transcript_id": transcript_base
+                })
+            else:
+                rows.append({
+                    "ensembl_id": "",
+                    "refseq_id": "",
+                    "uniprot_id": "",
+                    "transcript_id": transcript_base
+                })
+        if rows:
+            logger.info(f"Using {len([r for r in rows if r['ensembl_id'] or r['uniprot_id']])} protein IDs from VCF annotations.")
+            return pd.DataFrame(rows)
+        return pd.DataFrame(columns=["ensembl_id", "refseq_id", "uniprot_id", "transcript_id"])
+
+    # Merge VCF protein IDs into BioMart results
+    merged_count = 0
+    for transcript_id in transcripts:
+        transcript_base = transcript_id.split(".")[0]
+        if transcript_base not in vcf_protein_ids:
+            continue
+
+        vcf_ids = vcf_protein_ids[transcript_base]
+
+        # Check if this transcript exists in BioMart table
+        mask = biomart_table["transcript_id"] == transcript_base
+        if mask.any():
+            # Update empty values with VCF-derived IDs
+            for col, vcf_key in [("ensembl_id", "ensembl_id"), ("uniprot_id", "uniprot_id"), ("refseq_id", "refseq_id")]:
+                if vcf_ids.get(vcf_key):
+                    # Only update if BioMart value is empty/NaN
+                    current_val = biomart_table.loc[mask, col].iloc[0]
+                    if pd.isna(current_val) or current_val == "":
+                        biomart_table.loc[mask, col] = vcf_ids[vcf_key]
+                        merged_count += 1
+        else:
+            # Add new row for transcript not in BioMart
+            new_row = pd.DataFrame([{
+                "ensembl_id": vcf_ids.get("ensembl_id", ""),
+                "refseq_id": vcf_ids.get("refseq_id", ""),
+                "uniprot_id": vcf_ids.get("uniprot_id", ""),
+                "transcript_id": transcript_base
+            }])
+            biomart_table = pd.concat([biomart_table, new_row], ignore_index=True)
+            merged_count += 1
+
+    if merged_count > 0:
+        logger.info(f"Merged {merged_count} protein ID(s) from VCF annotations into BioMart results.")
+
+    return biomart_table
+
+
 def __main__():
     args = parse_args()
     logger.info("Running variant prediction version: " + str(VERSION))
 
     global transcriptProteinTable
+    global vcfProteinIds
 
     # Read VCF file
     variant_list, transcripts, variants_metadata = read_vcf(args.input)
@@ -970,6 +1078,11 @@ def __main__():
     else:
         # Create a mapping of transcript IDs to ensembl, refseq, and uniprot IDs
         transcriptProteinTable = martsadapter.get_protein_ids_from_transcripts(transcripts, type=EIdentifierTypes.ENSEMBL)
+
+    # Merge protein IDs from VCF annotations with BioMart results
+    # This ensures that protein IDs present in VCF (e.g., ENSP, UniProt) are used when BioMart lookup fails
+    if vcfProteinIds:
+        transcriptProteinTable = merge_vcf_protein_ids_with_biomart(transcriptProteinTable, vcfProteinIds, transcripts)
 
     # Generate mutated peptides from variants
     mutated_peptides_df, mutated_proteins = generate_peptides_from_variants( variant_list, martsadapter, variants_metadata, args.min_length, args.max_length + 1, args.ensembl_dataset)
