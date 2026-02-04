@@ -57,13 +57,9 @@
                 "genome_reference": {
                     "type": "string",
                     "default": "grch38",
-                    "help_text": "This defines against which human Ensembl genome reference the pipeline performs the analysis including the incorporation of genetic variants. If `grch37` or `grch38` are specified, the most recent Ensembl Biomart version for genome versions will be used. Alternatively, an Ensembl Biomart (archive) version can be specified, e.g. http://jan2020.archive.ensembl.org/.",
-                    "description": "Specifies the Ensembl genome reference version that will be used."
-                },
-                "ensembl_dataset": {
-                    "type": "string",
-                    "help_text": "Specifies the Ensembl BioMart dataset to use. For human data, use 'hsapiens_gene_ensembl' (default if not specified). For mouse data, use 'mmusculus_gene_ensembl'. Other species datasets can be found at https://www.ensembl.org/biomart/martview/.",
-                    "description": "Ensembl BioMart dataset for species-specific sequence lookup (e.g., hsapiens_gene_ensembl for human, mmusculus_gene_ensembl for mouse)."
+                    "enum": ["grch38", "grch37", "hg38", "hg19", "grcm39", "grcm38", "mm39", "mm10"],
+                    "help_text": "This defines the genome reference for the analysis. Human genomes (grch38, grch37, hg38, hg19) use the hsapiens_gene_ensembl dataset. Mouse genomes (grcm39, grcm38, mm39, mm10) use the mmusculus_gene_ensembl dataset. The Ensembl URL and dataset are automatically determined based on this parameter.",
+                    "description": "Specifies the genome reference (human: grch38, grch37, hg38, hg19; mouse: grcm39, grcm38, mm39, mm10)."
                 },
                 "proteome_reference": {
                     "type": "string",
