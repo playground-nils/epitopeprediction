@@ -39,11 +39,11 @@ GENOME_REFERENCE_MAP = {
     "grch37": {"url": "https://grch37.ensembl.org", "dataset": "hsapiens_gene_ensembl"},
     "hg38": {"url": "https://www.ensembl.org", "dataset": "hsapiens_gene_ensembl"},
     "hg19": {"url": "https://grch37.ensembl.org", "dataset": "hsapiens_gene_ensembl"},
-    # Mouse genomes
+    # Mouse genomes (GRCm39 is current; GRCm38 uses Ensembl 102 archive - last release with GRCm38)
     "grcm39": {"url": "https://www.ensembl.org", "dataset": "mmusculus_gene_ensembl"},
-    "grcm38": {"url": "https://www.ensembl.org", "dataset": "mmusculus_gene_ensembl"},
+    "grcm38": {"url": "https://nov2020.archive.ensembl.org", "dataset": "mmusculus_gene_ensembl"},
     "mm39": {"url": "https://www.ensembl.org", "dataset": "mmusculus_gene_ensembl"},
-    "mm10": {"url": "https://www.ensembl.org", "dataset": "mmusculus_gene_ensembl"},
+    "mm10": {"url": "https://nov2020.archive.ensembl.org", "dataset": "mmusculus_gene_ensembl"},
 }
 
 def unwrap_to_string(value, default="unknown"):
