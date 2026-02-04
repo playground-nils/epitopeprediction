@@ -32,6 +32,20 @@ transcriptProteinTable = {}
 vcfProteinIds = {}  # Store protein IDs extracted directly from VCF annotations
 vcfConsequences = {}  # Store consequences by (chrom, pos, ref, obs) for lookup in FASTA generation
 
+# Mapping from genome reference names to Ensembl URLs and datasets
+GENOME_REFERENCE_MAP = {
+    # Human genomes
+    "grch38": {"url": "https://www.ensembl.org", "dataset": "hsapiens_gene_ensembl"},
+    "grch37": {"url": "https://grch37.ensembl.org", "dataset": "hsapiens_gene_ensembl"},
+    "hg38": {"url": "https://www.ensembl.org", "dataset": "hsapiens_gene_ensembl"},
+    "hg19": {"url": "https://grch37.ensembl.org", "dataset": "hsapiens_gene_ensembl"},
+    # Mouse genomes
+    "grcm39": {"url": "https://www.ensembl.org", "dataset": "mmusculus_gene_ensembl"},
+    "grcm38": {"url": "https://www.ensembl.org", "dataset": "mmusculus_gene_ensembl"},
+    "mm39": {"url": "https://www.ensembl.org", "dataset": "mmusculus_gene_ensembl"},
+    "mm10": {"url": "https://www.ensembl.org", "dataset": "mmusculus_gene_ensembl"},
+}
+
 def unwrap_to_string(value, default="unknown"):
     """Unwrap nested lists to get a string value.
 
@@ -68,8 +82,7 @@ def parse_args():
     parser.add_argument("--flanking_region_size", help="Size of flanking region around mutated peptides in FASTA output", type=int, default=25)
     parser.add_argument("--min_length", help="Minimum peptide length of mutated peptides", type=int, default=8)
     parser.add_argument("--max_length", help="Maximum peptide length of mutated peptides", type=int, default=14)
-    parser.add_argument("--genome_reference", help="Reference, retrieved information will be based on this ensembl version", default="https://grch37.ensembl.org/")
-    parser.add_argument("--ensembl_dataset", help="Ensembl BioMart dataset to use (e.g., hsapiens_gene_ensembl for human, mmusculus_gene_ensembl for mouse)", type=str, default="hsapiens_gene_ensembl")
+    parser.add_argument("--genome_reference", help="Genome reference (grch38, grch37, hg38, hg19 for human; grcm39, grcm38, mm39, mm10 for mouse)", default="grch38")
     parser.add_argument("--proteome_reference", help="Specify reference proteome fasta for self-filtering peptides from variants")
     parser.add_argument("--peptide_col_name", help="Name of the column containing the peptide sequences", type=str, default="sequence")
     parser.add_argument("--version", help="Script version", action="version", version=VERSION)
@@ -1100,10 +1113,18 @@ def __main__():
         write_empty_files(args)
         return  # Exit early
 
+    # Look up genome reference in the mapping
+    genome_ref_lower = args.genome_reference.lower()
+    if genome_ref_lower not in GENOME_REFERENCE_MAP:
+        logger.error(f"Unknown genome reference: {args.genome_reference}. Supported values: {', '.join(GENOME_REFERENCE_MAP.keys())}")
+        sys.exit(1)
+    genome_info = GENOME_REFERENCE_MAP[genome_ref_lower]
+    ensembl_url = genome_info["url"]
+    ensembl_dataset = genome_info["dataset"]
+    logger.info(f"Using genome reference '{args.genome_reference}' -> Ensembl URL: {ensembl_url}, dataset: {ensembl_dataset}")
+
     # initialize MartsAdapter
-    # in previous version, these were the defaults "GRCh37": "http://feb2014.archive.ensembl.org" (broken)
-    # "GRCh38": "http://apr2018.archive.ensembl.org" (different dataset table scheme, could potentially be fixed on BiomartAdapter level if needed )
-    martsadapter = MartsAdapter(biomart=args.genome_reference)
+    martsadapter = MartsAdapter(biomart=ensembl_url)
 
     if args.biomart_dump:
         logger.info(f"Using offline biomart dump. Loading transcript to protein mapping from {args.biomart_dump}")
@@ -1122,7 +1143,7 @@ def __main__():
     transcriptProteinTable = merge_vcf_protein_ids_with_biomart(transcriptProteinTable, vcfProteinIds, transcripts)
 
     # Generate mutated peptides from variants
-    mutated_peptides_df, mutated_proteins = generate_peptides_from_variants( variant_list, martsadapter, variants_metadata, args.min_length, args.max_length + 1, args.ensembl_dataset)
+    mutated_peptides_df, mutated_proteins = generate_peptides_from_variants( variant_list, martsadapter, variants_metadata, args.min_length, args.max_length + 1, ensembl_dataset)
 
     # Check if mutated_peptides_df is empty after filtering and write empty files
     if mutated_peptides_df.empty:
