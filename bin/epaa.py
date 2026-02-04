@@ -1118,8 +1118,8 @@ def __main__():
 
     # Merge protein IDs from VCF annotations with BioMart results
     # This ensures that protein IDs present in VCF (e.g., ENSP, UniProt) are used when BioMart lookup fails
-    if vcfProteinIds:
-        transcriptProteinTable = merge_vcf_protein_ids_with_biomart(transcriptProteinTable, vcfProteinIds, transcripts)
+    # Always call merge function to ensure transcriptProteinTable is initialized even if BioMart failed
+    transcriptProteinTable = merge_vcf_protein_ids_with_biomart(transcriptProteinTable, vcfProteinIds, transcripts)
 
     # Generate mutated peptides from variants
     mutated_peptides_df, mutated_proteins = generate_peptides_from_variants( variant_list, martsadapter, variants_metadata, args.min_length, args.max_length + 1, args.ensembl_dataset)
