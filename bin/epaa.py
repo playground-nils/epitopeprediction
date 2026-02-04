@@ -1110,7 +1110,11 @@ def __main__():
         transcriptProteinTable = get_protein_ids_from_transcripts_offline(transcripts, args.biomart_dump)
     else:
         # Create a mapping of transcript IDs to ensembl, refseq, and uniprot IDs
-        transcriptProteinTable = martsadapter.get_protein_ids_from_transcripts(transcripts, type=EIdentifierTypes.ENSEMBL)
+        try:
+            transcriptProteinTable = martsadapter.get_protein_ids_from_transcripts(transcripts, type=EIdentifierTypes.ENSEMBL)
+        except Exception as e:
+            logger.warning(f"BioMart lookup failed: {e}. Will use protein IDs from VCF annotations if available.")
+            transcriptProteinTable = None
 
     # Merge protein IDs from VCF annotations with BioMart results
     # This ensures that protein IDs present in VCF (e.g., ENSP, UniProt) are used when BioMart lookup fails
