@@ -82,7 +82,7 @@ def parse_args():
     parser.add_argument("--flanking_region_size", help="Size of flanking region around mutated peptides in FASTA output", type=int, default=25)
     parser.add_argument("--min_length", help="Minimum peptide length of mutated peptides", type=int, default=8)
     parser.add_argument("--max_length", help="Maximum peptide length of mutated peptides", type=int, default=14)
-    parser.add_argument("--genome_reference", help="Genome reference (grch38, grch37, hg38, hg19 for human; grcm39, grcm38, mm39, mm10 for mouse)", default="grch38")
+    parser.add_argument("--genome_reference", help="Genome reference (grch38, grch37, hg38, hg19 for human; grcm39, grcm38, mm39, mm10 for mouse) or Ensembl URL (defaults to human)", default="grch38")
     parser.add_argument("--proteome_reference", help="Specify reference proteome fasta for self-filtering peptides from variants")
     parser.add_argument("--peptide_col_name", help="Name of the column containing the peptide sequences", type=str, default="sequence")
     parser.add_argument("--version", help="Script version", action="version", version=VERSION)
@@ -1113,15 +1113,21 @@ def __main__():
         write_empty_files(args)
         return  # Exit early
 
-    # Look up genome reference in the mapping
+    # Look up genome reference in the mapping or use URL directly
     genome_ref_lower = args.genome_reference.lower()
-    if genome_ref_lower not in GENOME_REFERENCE_MAP:
-        logger.error(f"Unknown genome reference: {args.genome_reference}. Supported values: {', '.join(GENOME_REFERENCE_MAP.keys())}")
+    if genome_ref_lower in GENOME_REFERENCE_MAP:
+        genome_info = GENOME_REFERENCE_MAP[genome_ref_lower]
+        ensembl_url = genome_info["url"]
+        ensembl_dataset = genome_info["dataset"]
+        logger.info(f"Using genome reference '{args.genome_reference}' -> Ensembl URL: {ensembl_url}, dataset: {ensembl_dataset}")
+    elif genome_ref_lower.startswith("http"):
+        # URL provided directly, default to human dataset
+        ensembl_url = args.genome_reference
+        ensembl_dataset = "hsapiens_gene_ensembl"
+        logger.info(f"Using Ensembl URL directly: {ensembl_url}, defaulting to human dataset: {ensembl_dataset}")
+    else:
+        logger.error(f"Unknown genome reference: {args.genome_reference}. Supported values: {', '.join(GENOME_REFERENCE_MAP.keys())} or an Ensembl URL")
         sys.exit(1)
-    genome_info = GENOME_REFERENCE_MAP[genome_ref_lower]
-    ensembl_url = genome_info["url"]
-    ensembl_dataset = genome_info["dataset"]
-    logger.info(f"Using genome reference '{args.genome_reference}' -> Ensembl URL: {ensembl_url}, dataset: {ensembl_dataset}")
 
     # initialize MartsAdapter
     martsadapter = MartsAdapter(biomart=ensembl_url)
