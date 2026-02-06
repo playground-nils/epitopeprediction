@@ -10,7 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#315](https://github.com/nf-core/epitopeprediction/pull/315) Added module bcftools/norm and parameter `--genome` for reference.fasta input ([@SusiJo](https://github.com/SusiJo/))
 - [#316](https://github.com/nf-core/epitopeprediction/pull/316) Added parameter `--biomart_dump_path` for offline biomart usage that addresses issue[#248](https://github.com/nf-core/epitopeprediction/issues/248) ([@SusiJo](https://github.com/SusiJo/))
 
-
 ### `Fixed`
 
 - Fixed Nextflow strict syntax lint errors: removed variable declarations mixed with config statements, fixed undeclared variables, invalid process directives, deprecated implicit closure parameters, and unused variable warnings
