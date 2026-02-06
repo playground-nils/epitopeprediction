@@ -12,14 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Fixed`
 
-- Fixed Nextflow strict syntax lint errors: removed variable declarations mixed with config statements, fixed undeclared variables, invalid process directives, deprecated implicit closure parameters, and unused variable warnings
+- [#331](https://github.com/nf-core/epitopeprediction/pull/331) Fixed Nextflow strict syntax lint errors ([@jonasscheid](https://github.com/jonasscheid/))
 
 ### `Dependencies`
 
 | Dependency | Old version | New version |
 | ---------- | ----------- | ----------- |
 | `bcftools` | 1.21        | 1.22        |
-| `nf-core`  | 3.4.1       | 3.5.1       |
+| `nf-core`  | 3.4.1       | 3.5.2       |
 
 ### `Changed`
 
