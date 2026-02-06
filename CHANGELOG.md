@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Fixed`
 
+- Fixed Nextflow strict syntax lint errors: removed variable declarations mixed with config statements, fixed undeclared variables, invalid process directives, deprecated implicit closure parameters, and unused variable warnings
+
 ### `Dependencies`
 
 | Dependency | Old version | New version |
