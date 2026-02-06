@@ -142,13 +142,6 @@
                     "default": false,
                     "description": "Filter out non-binders from the final results.",
                     "help_text": "When enabled, only peptides predicted as binders by at least one predictor will be included in the final output file."
-                },
-                "use_ba_rank": {
-                    "type": "boolean",
-                    "default": false,
-                    "hidden": true,
-                    "description": "Use BA_Rank instead of EL_Rank for netMHCpan and netMHCIIpan predictions.",
-                    "help_text": "By default, netMHCpan and netMHCIIpan predictions use EL_Rank (Eluted Ligand Rank) as the rank metric, which is the recommended metric by the developers. When this flag is enabled, BA_Rank (Binding Affinity Rank) will be used instead. Note that EL_Rank and BA_Rank can differ significantly as they are computed against different reference sets."
                 }
             }
         },
