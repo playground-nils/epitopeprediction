@@ -2,9 +2,15 @@
 work/
 data/
 results/
+results_*/
 .DS_Store
 testing/
 testing*
 *.pyc
 null/
 .nf-test*
+CLAUDE.md
+.claude/
+run_epp.sh
+samplesheets/
+scripts/
