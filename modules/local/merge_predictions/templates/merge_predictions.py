@@ -43,7 +43,6 @@ class Arguments:
         self.source_file = "$source_file"
         self.prefix = "$task.ext.prefix" if "$task.ext.prefix" != "null" else "$meta.id"
         self.alleles = sorted("$meta.alleles".split(';'))
-        self.use_ba_rank = False  # Default value, will be overridden if --use_ba_rank is passed
         self.parse_ext_args("$task.ext.args")
 
     def parse_ext_args(self, args_string: str) -> None:
@@ -126,11 +125,10 @@ class Utils:
 #           Parse Predictions
 # -------------------------------------------
 class PredictionResult:
-    def __init__(self, file_path, alleles, peptide_col_name, use_ba_rank=False):
+    def __init__(self, file_path, alleles, peptide_col_name):
         self.file_path = file_path
         self.alleles = alleles
         self.peptide_col_name = peptide_col_name
-        self.use_ba_rank = use_ba_rank
         self.predictor = None
         self.prediction_df = self._format_prediction_result()
 
@@ -198,12 +196,9 @@ class PredictionResult:
         # Read the file into a DataFrame with no headers initially
         df = pd.read_csv(self.file_path, sep='\t', skiprows=1)
         # Extract Peptide, percentile rank, binding affinity
-        # Select either Rank_BA (BA_Rank) or Rank (EL_Rank) based on use_ba_rank flag
-        rank_metric = '_BA' if self.use_ba_rank else ''
-        rank_column = f'Rank{rank_metric}'
-        df = df[df.columns[df.columns.str.contains(f'Peptide|{rank_column}|BA_score')]]
+        df = df[df.columns[df.columns.str.contains('Peptide|Rank|BA_score')]]
 
-        df = df.rename(columns={'Peptide': self.peptide_col_name, rank_column: f'{rank_column}.0', 'BA_score': 'BA_score.0'})
+        df = df.rename(columns={'Peptide':self.peptide_col_name,'Rank':'Rank.0','BA_score':'BA_score.0'})
         # to longformat based on .0|1|2..
         df_long = pd.melt(
             df,
@@ -215,7 +210,7 @@ class PredictionResult:
 
         # Extract the allele information (e.g., .0, .1, etc.)
         df_long['allele'] = df_long['metric'].str.split('.').str[1]
-        df_long['metric'] = df_long['metric'].apply(lambda x: x.split('.')[0].replace(rank_column, 'rank').replace('BA_score', 'BA'))
+        df_long['metric'] = df_long['metric'].apply(lambda x: x.split('.')[0].replace('Rank','rank').replace('BA_score','BA'))
 
         # Pivot table to organize columns properly
         df_pivot = df_long.pivot_table(index=[self.peptide_col_name, 'allele'], columns='metric', values='value').reset_index()
@@ -234,19 +229,15 @@ class PredictionResult:
     def _format_netmhciipan_prediction(self) -> pd.DataFrame:
         """
         Read in netmhciipan prediction output and extract the columns
-        `Peptide,Rank_EL,Score_BA` for multiple alleles (or Rank_BA when use_ba_rank is True).
+        `Peptide,Rank,Score_BA` for multiple alleles.
         """
         # Map with allele index to allele name. NetMHCIIpan sorts alleles alphabetically
         alleles_dict = {i: allele for i, allele in enumerate(self.alleles)}
         # Read the file into a DataFrame with no headers initially
         df = pd.read_csv(self.file_path, sep='\t', skiprows=1)
         # Extract Peptide, percentile rank, binding affinity
-        # Select either Rank_BA (BA_Rank) or Rank_EL (EL_Rank) based on use_ba_rank flag
-        rank_metric = 'BA' if self.use_ba_rank else 'EL'
-        rank_column = f'Rank_{rank_metric}'
-        df = df[df.columns[df.columns.str.contains(f'Peptide|{rank_column}|Score_BA')]]
-
-        df = df.rename(columns={'Peptide': self.peptide_col_name, rank_column: f'{rank_column}.0', 'Score_BA': 'Score_BA.0'})
+        df = df[df.columns[df.columns.str.contains('Peptide|Rank(?!_BA)|Score_BA')]]
+        df = df.rename(columns={'Peptide':self.peptide_col_name,'Rank':'Rank.0','Score_BA':'Score_BA.0'})
         # to longformat based on .0|1|2..
         df_long = pd.melt(
             df,
@@ -257,7 +248,7 @@ class PredictionResult:
         )
         # Extract the allele information (e.g., .0, .1, etc.)
         df_long['allele'] = df_long['metric'].str.split('.').str[1]
-        df_long['metric'] = df_long['metric'].apply(lambda x: x.split('.')[0].replace(rank_column, 'rank').replace('Score_BA', 'BA'))
+        df_long['metric'] = df_long['metric'].apply(lambda x: x.split('.')[0].replace('Rank','rank').replace('Score_BA','BA'))
 
         # Pivot table to organize columns properly
         df_pivot = df_long.pivot_table(index=[self.peptide_col_name, 'allele'], columns='metric', values='value').reset_index()
@@ -274,7 +265,7 @@ def main():
     # Iterate over each file predicted by multiple predictors, harmonize and merge output
     output_df = []
     for file in args.input:
-        result = PredictionResult(file, args.alleles, args.peptide_col_name, args.use_ba_rank)
+        result = PredictionResult(file, args.alleles, args.peptide_col_name)
 
         logging.info(f"Writing {len(result.prediction_df)} {result.predictor} predictions to file..")
         output_df.append(result.prediction_df)
