@@ -9,8 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#315](https://github.com/nf-core/epitopeprediction/pull/315) Added module bcftools/norm and parameter `--genome` for reference.fasta input ([@SusiJo](https://github.com/SusiJo/))
 - [#316](https://github.com/nf-core/epitopeprediction/pull/316) Added parameter `--biomart_dump_path` for offline biomart usage that addresses issue[#248](https://github.com/nf-core/epitopeprediction/issues/248) ([@SusiJo](https://github.com/SusiJo/))
+- Extract protein IDs (ENSP, UniProt, RefSeq) directly from VCF CSQ annotations as fallback when BioMart lookup fails
+- Genome reference mapping to auto-detect Ensembl URL and dataset from genome name (grch38, grcm38, etc.)
 
 ### `Fixed`
+
+- Fix metadata copying for transcripts with >10 variants causing "unknown" consequence in FASTA output
+- Fix nested list handling in variant metadata preventing TypeError in FASTA generation
+- Add error handling for BioMart API failures to gracefully fall back to VCF annotations
 
 ### `Dependencies`
 
@@ -23,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#316](https://github.com/nf-core/epitopeprediction/pull/316) Added parameter `--biomart_dump` in `epaa.py` ([@SusiJo](https://github.com/SusiJo/)).
 - [#320](https://github.com/nf-core/epitopeprediction/pull/320) Set default genome reference to GRCh38 ([@jonasscheid](https://github.com/jonasscheid/)).
+- Remove `--ensembl_dataset` parameter; Ensembl dataset is now auto-detected from `--genome_reference` (supports human and mouse genomes, or direct Ensembl URL).
 
 ## 3.1.0 - Lustnau - 2025-10-22
 
