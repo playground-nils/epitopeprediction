@@ -14,16 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Fixed`
 
-- Fix metadata copying for transcripts with >10 variants causing "unknown" consequence in FASTA output
-- Fix nested list handling in variant metadata preventing TypeError in FASTA generation
-- Add error handling for BioMart API failures to gracefully fall back to VCF annotations
+- [#331](https://github.com/nf-core/epitopeprediction/pull/331) Fixed Nextflow strict syntax lint errors ([@jonasscheid](https://github.com/jonasscheid/))
+- [#330](https://github.com/nf-core/epitopeprediction/pull/330) Extract protein IDs from VCF annotations and add genome reference mappings [@axelwalter](https://github.com/axelwalter)
 
 ### `Dependencies`
 
 | Dependency | Old version | New version |
 | ---------- | ----------- | ----------- |
 | `bcftools` | 1.21        | 1.22        |
-| `nf-core`  | 3.4.1       | 3.5.1       |
+| `nf-core`  | 3.4.1       | 3.5.2       |
 
 ### `Changed`
 
