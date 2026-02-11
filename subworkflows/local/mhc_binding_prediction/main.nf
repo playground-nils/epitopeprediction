@@ -89,7 +89,7 @@ workflow MHC_BINDING_PREDICTION {
 
     // Join predicted file and subworkflow input file to add inputfile metadata
     ch_binding_predictors_out
-        .map { meta, file -> [meta.findAll { k, v -> k != 'alleles_supported' }, file] } // drop alleles_supported from meta
+        .map { meta, file -> [meta.findAll { k, _v -> k != 'alleles_supported' }, file] } // drop alleles_supported from meta
         .groupTuple()
         .join( ch_peptides_to_predict )
         .set { ch_binding_predictors_out_meta}
@@ -109,10 +109,10 @@ workflow MHC_BINDING_PREDICTION {
 
 // Check if supported tools are specified
 def validate_tools_param(tools) {
-    valid_tools = [ 'mhcnuggets', 'mhcnuggetsii', 'mhcflurry', 'netmhcpan', 'netmhciipan' ]
-    tool_list = tools.tokenize(',')
+    def valid_tools = [ 'mhcnuggets', 'mhcnuggetsii', 'mhcflurry', 'netmhcpan', 'netmhciipan' ]
+    def tool_list = tools.tokenize(',')
     // Validate each tool in tools if it's in valid_tools
-    def invalid_tools = tool_list.findAll { it.trim() !in valid_tools }
+    def invalid_tools = tool_list.findAll { tool -> tool.trim() !in valid_tools }
     if (invalid_tools) {
         throw new IllegalArgumentException("Invalid tools found: ${invalid_tools.join(',')}.\nValid tools: ${valid_tools.join(',')}")
     }
@@ -134,7 +134,7 @@ def parse_netmhc_params(tool_name, netmhc_software_meta) {
         entry = netmhc_software_meta_map["${tool_name}_darwin"]
     }
     // If so, add the tool name and user installation path to the external tools import channel
-    ch_netmhc_exe = channel.empty()
+    def ch_netmhc_exe = channel.empty()
     ch_netmhc_exe.bind([
         tool_name,
         entry.version,
