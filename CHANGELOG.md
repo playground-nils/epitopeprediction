@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#316](https://github.com/nf-core/epitopeprediction/pull/316) Added parameter `--biomart_dump` in `epaa.py` ([@SusiJo](https://github.com/SusiJo/)).
 - [#320](https://github.com/nf-core/epitopeprediction/pull/320) Set default genome reference to GRCh38 ([@jonasscheid](https://github.com/jonasscheid/)).
 - Remove `--ensembl_dataset` parameter; Ensembl dataset is now auto-detected from `--genome_reference` (supports human and mouse genomes, or direct Ensembl URL).
+- [#336](https://github.com/nf-core/epitopeprediction/pull/336) Added NetMHCpan 4.2 mode config file instructions to the nf-core usage documentation. ([@Kabooni](https://github.com/Kabooni)).
 
 ## 3.1.0 - Lustnau - 2025-10-22
 
