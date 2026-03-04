@@ -8,10 +8,17 @@
         "type": "object",
         "properties": {
             "sample": {
-                "type": "string",
-                "pattern": "^\\S+$",
+                "anyOf": [
+                    {
+                        "type": "integer"
+                    },
+                    {
+                        "type": "string",
+                        "pattern": "^\\S+$"
+                    }
+                ],
                 "errorMessage": "Sample name must be provided and cannot contain spaces",
-                "description": "Custom sample name. This entry will be identical for multiple sequencing libraries/runs from the same sample.",
+                "description": "Custom sample name. This entry will be identical for multiple sequencing libraries/runs from the same sample. Can be an integer or a string without spaces.",
                 "meta": ["id"]
             },
             "alleles": {
