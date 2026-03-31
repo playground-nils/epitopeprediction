@@ -202,7 +202,7 @@ class PredictionResult:
         # Extract Peptide, percentile rank, binding affinity
         # Select either BA_Rank or Rank (EL_Rank) based on use_ba_rank flag
         rank_column = 'BA_Rank' if self.use_ba_rank else 'Rank'
-        df = df[df.columns[df.columns.str.fullmatch(f'Peptide|{rank_column}|BA_score')]]
+        df = df[df.columns[df.columns.str.fullmatch(rf'Peptide|(?:{rank_column}|BA_score)(?:[.][0-9]+)?')]]
 
         df = df.rename(columns={'Peptide': self.peptide_col_name, rank_column: f'{rank_column}.0', 'BA_score': 'BA_score.0'})
         # to longformat based on .0|1|2..
