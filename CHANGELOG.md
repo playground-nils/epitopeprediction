@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#349](https://github.com/nf-core/epitopeprediction/pull/349) Fixed MultiQC stats mismatch: use per-peptide binder counts, fix unsupported count formula, fix netmhcpan multi-allele column parsing ([@jonasscheid](https://github.com/jonasscheid/))
 - [#331](https://github.com/nf-core/epitopeprediction/pull/331) Fixed Nextflow strict syntax lint errors ([@jonasscheid](https://github.com/jonasscheid/))
 - [#330](https://github.com/nf-core/epitopeprediction/pull/330) Extract protein IDs from VCF annotations and add genome reference mappings [@axelwalter](https://github.com/axelwalter)
+- [#348](https://github.com/nf-core/epitopeprediction/pull/348) Bumped Python container from 3.11 to 3.14 in SPLIT_PEPTIDES and VARIANT_SPLIT ([@jonasscheid](https://github.com/jonasscheid/))
 
 ### `Dependencies`
 
