@@ -235,17 +235,21 @@ class PredictionResult:
     def _format_netmhciipan_prediction(self) -> pd.DataFrame:
         """
         Read in netmhciipan prediction output and extract the columns
-        `Peptide,Rank_EL,Score_BA` for multiple alleles (or Rank_BA when use_ba_rank is True).
+        `Peptide,Rank,Score_BA` for multiple alleles (or Rank_BA when use_ba_rank is True).
+        NetMHCIIpan 4.3 xls uses `Rank` for the EL percentile and `Rank_BA` for BA percentile;
+        multi-allele files are handled by pandas auto-suffixing duplicate columns as `.1`, `.2` …
         """
         # Map with allele index to allele name. NetMHCIIpan sorts alleles alphabetically
         alleles_dict = {i: allele for i, allele in enumerate(self.alleles)}
         # Read the file into a DataFrame with no headers initially
         df = pd.read_csv(self.file_path, sep='\t', skiprows=1)
         # Extract Peptide, percentile rank, binding affinity
-        # Select either Rank_BA (BA_Rank) or Rank_EL (EL_Rank) based on use_ba_rank flag
-        rank_metric = 'BA' if self.use_ba_rank else 'EL'
-        rank_column = f'Rank_{rank_metric}'
-        df = df[df.columns[df.columns.str.contains(f'Peptide|{rank_column}|Score_BA')]]
+        # Select either Rank_BA (BA percentile) or Rank (EL percentile) based on use_ba_rank flag
+        rank_column = 'Rank_BA' if self.use_ba_rank else 'Rank'
+        # Full-match so `Rank` does not accidentally pick up `Rank_BA` as a substring,
+        # while still matching pandas-suffixed duplicates in multi-allele mode (`Rank.1`, `Rank.2`, …).
+        keep_pattern = rf'Peptide|{rank_column}(\\.\\d+)?|Score_BA(\\.\\d+)?'
+        df = df[df.columns[df.columns.str.fullmatch(keep_pattern)]]
 
         df = df.rename(columns={'Peptide': self.peptide_col_name, rank_column: f'{rank_column}.0', 'Score_BA': 'Score_BA.0'})
         # to longformat based on .0|1|2..
