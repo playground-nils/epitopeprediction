@@ -20,12 +20,20 @@ process NETMHCIIPAN {
     }
     def args    = task.ext.args ?: ''
     def prefix  = task.ext.prefix ?: "${meta.id}"
-    // Adjust for netMHCIIpan allele format (e.g. DRB1_0101, HLA-DPA10103-DPB10101)
+    // Adjust for netMHCIIpan allele format (e.g. DRB1_0101, HLA-DPA10103-DPB10101, H-2-IAb)
     def alleles = meta.alleles_supported.tokenize(';')
                     .collect { allele ->
-                        allele.contains('DRB') ?
-                            allele.replace('*', '_').replace(':', '').replace('HLA-', '') :
+                        if (allele.contains('DRB')) {
+                            // HLA-DRB1*01:01 -> DRB1_0101
+                            allele.replace('*', '_').replace(':', '').replace('HLA-', '')
+                        } else if (allele.startsWith('H2-') && allele.contains('/')) {
+                            // mhcgnomes mouse class II canonical form is H2-<X>A*<Y>/<X>B*<Y>
+                            // (locus X = A or E, haplotype Y = b/d/k/...). NetMHCIIpan wants H-2-I<X><Y>.
+                            "H-2-I${allele[3]}${allele.substring(allele.lastIndexOf('*') + 1)}"
+                        } else {
+                            // HLA-DPA1*01:03/DPB1*04:01 -> HLA-DPA10103-DPB10401
                             allele.replace('*', '').replace(':', '').replace('/','-').replace('H2','H-2')
+                        }
                     }.join(',')
 
     """
